@@ -1,12 +1,14 @@
 package com.bookteria.profile_service.controller;
 
+import org.springframework.web.bind.annotation.*;
+
 import com.bookteria.profile_service.dto.request.ProfileCreationRequest;
 import com.bookteria.profile_service.dto.response.UserProfileResponse;
 import com.bookteria.profile_service.service.UserProfileService;
+
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
-import org.springframework.web.bind.annotation.*;
 
 @RestController
 @RequiredArgsConstructor

@@ -4,13 +4,16 @@ import com.bookteria.api_gateway.dto.ApiResponse;
 import com.bookteria.api_gateway.service.IdentityService;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
+import lombok.experimental.NonFinal;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.cloud.gateway.filter.GatewayFilterChain;
 import org.springframework.cloud.gateway.filter.GlobalFilter;
 import org.springframework.core.Ordered;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
+import org.springframework.http.server.reactive.ServerHttpRequest;
 import org.springframework.http.server.reactive.ServerHttpResponse;
 import org.springframework.stereotype.Component;
 import org.springframework.util.CollectionUtils;
@@ -20,6 +23,7 @@ import tools.jackson.databind.ObjectMapper;
 import tools.jackson.core.JacksonException;
 
 
+import java.util.Arrays;
 import java.util.List;
 
 @Component
@@ -30,9 +34,24 @@ public class AuthenticationFilter implements GlobalFilter, Ordered {
     private final IdentityService identityService;
     ObjectMapper objectMapper;
 
+    @NonFinal
+    private String[] publicEndpoint = {
+            "/identity/auth/.*",
+            "/identity/users/registration"
+    };
+
+    @Value("${app.api-prefix}")
+    @NonFinal
+    private String apiPrefix;
+
     @Override
     public Mono<Void> filter(ServerWebExchange exchange, GatewayFilterChain chain) {
         log.info("Enter authentication filter ...");
+
+//        exchange.getRequest();
+        if (isPublicEndpoint(exchange.getRequest())) {
+            return chain.filter(exchange);
+        }
 
         // get token from authorization header
         List<String> authHeader = exchange.getRequest().getHeaders().get(HttpHeaders.AUTHORIZATION);
@@ -56,6 +75,11 @@ public class AuthenticationFilter implements GlobalFilter, Ordered {
     @Override
     public int getOrder() {
         return -1;
+    }
+
+    private boolean isPublicEndpoint(ServerHttpRequest request) {
+        return Arrays.stream(publicEndpoint)
+                .anyMatch(s -> request.getURI().getPath().matches(apiPrefix + s));
     }
 
     Mono<Void> unauthenticated(ServerHttpResponse response) {
